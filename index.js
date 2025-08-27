@@ -17,14 +17,13 @@ const { Schema } = mongoose;
 
 app.use(cors())
 app.use(express.static('public'))
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/views/index.html')
-});
 
+// setup body-parser middleware to parse the post request body
+app.use(bodyParser.urlencoded({extended: false}));
 
 // the user schema 
 let userSchema = new mongoose.Schema({
-  username: { type: String, required: true },
+  username: { type: String, required: true, unique: true },
   loggedExercises: [{ type: Schema.Types.ObjectId, ref: "Exercise" }],
 });
 
@@ -36,17 +35,61 @@ const exerciseSchema = Schema({
   date: Date
 });
 
-let User = mongoose.model("User", userSchema);
-let Exercise = mongoose.model("Exercise", exerciseSchema);
+// the User model
+let UserRecord = mongoose.model("User", userSchema);
+// the Exercise model
+let ExerciseRecord = mongoose.model("Exercise", exerciseSchema);
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
 
-// setup body-parser middleware to parse the post request body
-app.use("/api/users", bodyParser.urlencoded());
 
-// Create new user
-app.post("/api/users", async (req, res) => {
-  console.log(req.body);
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/views/index.html");
+});
+
+
+const findOneByUsername = async (username) => {
+  const queryResult = await UserRecord.findOne({ username });
+  if (queryResult) {
+    console.log(queryResult);
+    return queryResult._id;
+  } else {
+    return null;
+  }
+};
+
+// use route chaining to handle get and post
+app.route("/api/users").get(async (req, res) => {
+  const allUsers = await UserRecord.find();
+  console.log(allUsers);
+  res.json(allUsers);
+}).post(async (req, res) => {
+  const username = req.body.username;
+  const validUserRegex = /^[a-zA-Z0-9_]{5,}$/;
+
+  if (validUserRegex.test(username)) {
+    console.log("it's valid, save it");
+    //then after saving, get the result res.json: {"username":"pink","_id":"68af1302509d2d00133008f1"}
+
+    //step 1: figure out if the person already exists in the db
+    let userid = await findOneByUsername(username);
+    console.log(userid);
+    if (userid) {
+      console.log("this user exists");
+    } else {
+      console.log("this is a new user");
+      // when we want to create new document, we instantiate the model (URLRecord)
+      let userRecord = new UserRecord({ username });
+
+      // then we can save the new instance of UserRecord to the users collection
+      const doc = await userRecord.save();
+      console.log(doc);
+      userid = doc._id;
+    }
+    res.json({ "username": username, "_id": userid });
+  } else {
+    console.log(`username ${username} is invalid, ignore it`);
+  }
 });
