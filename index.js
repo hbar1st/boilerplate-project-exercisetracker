@@ -48,23 +48,5 @@ app.use("/api/users", bodyParser.urlencoded());
 
 // Create new user
 app.post("/api/users", async (req, res) => {
-
-  /**
-  const pageURL = req.body.url; // Assuming imageUrl is sent in the request body
-  console.log("pageURL", pageURL);
-  const valid = await isValidUrl(pageURL)
-  console.log("result of isValidUrl:", valid);
-  if (valid) {
-    // URL is valid, proceed with processing
-    const shorturl = await createAndSaveURLRecord(pageURL)
-    console.log("shorturl -> ", shorturl);
-    res.json({ original_url: pageURL, short_url: shorturl });
-
-  } else {
-    // URL is invalid
-    res.json({ error: "invalid url" });
-  }
-  */
-  
   console.log(req.body);
 });
