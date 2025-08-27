@@ -81,7 +81,6 @@ app.route("/api/users").get(async (req, res) => {
     
     //step 1: figure out if the person already exists in the db
     let userid = await findOneByUsername(username);
-    console.log(userid);
     if (userid) {
       console.log("this user exists");
     } else {
@@ -101,68 +100,64 @@ app.route("/api/users").get(async (req, res) => {
 });
 
 // use route chaining to handle get and post
-app
-  .route("/api/users/:userid/exercises")
-  .get(async (req, res) => {
-    /*
-    const allExercises = await ExerciseRecord.find();
-    console.log(allExercises);
-    res.json(allExercises);
-    */
-  })
-  .post(async (req, res) => {
-    // get form data(description is required, duration is required, but date is not)
-    const userid = req.body[":_id"];
-
-    const usernameDoc = await UserRecord.findById(userid, {
-      username: 1,
-    });
-    const username = usernameDoc?.username;
-
-    if (usernameDoc) {
-      const description = req.body.description;
-      // duration is in minutes
-      const duration = req.body.duration;
-      const today = new Date();
-      // if date not given, then use today's date
-      let date = req.body.date;
-      if (date === "") {
-        console.log("try to make a new date");
-        date = `${today.getFullYear()}-${
-          today.getMonth() + 1
-        }-${today.getUTCDate()}`;
-      }
-
-      // create the exercise record (let it fail automatically if the userid doesn't exist)
-      // to create new document, we instantiate the model (ExerciseRecord)
-      let exerciseRecord = new ExerciseRecord({
-        userid,
-        description,
-        duration,
-        date,
-      });
-
-      // then we can save the new instance of UserRecord to the users collection
-      const doc = await exerciseRecord.save();
-      console.log("output of save: ", doc);
-      const recordDate = new Date(doc.date);
-      const options = {
-        weekday: "short",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      };
-      const outputDate = `${recordDate.toLocaleDateString(
-        undefined,
-        options
-      )}`.replace(/,/g, "");
-
-      res.json({
-        _id: doc.userid,
-        username: username,
-        date: outputDate,
-        duration: doc.duration,
-        description: doc.description,
-      });
-    }
+app.post("/api/users/:_id/exercises", async (req, res) => {
+  // get form data(description is required, duration is required, but date is not)
+  const userid  = req.params["_id"];
+  console.log("in the post /api/users/:_id/exercises and trying to find this user: ", req.params);
+  const usernameDoc = await UserRecord.findById(userid, {
+    username: 1,
   });
+  const username = usernameDoc?.username;
+  
+  if (!usernameDoc) {
+    return;
+  }
+  
+  const description = req.body.description;
+  // duration is in minutes
+  const duration = req.body.duration;
+  const today = new Date();
+  // if date not given, then use today's date
+  let date = req.body.date;
+  console.log("given date field value: ", req.body.date);
+  if (date === "") {
+    console.log("try to make a new date");
+    date = `${today.getFullYear()}-${today.getMonth() + 1
+      }-${today.getUTCDate()}`;
+  }
+  
+  // create the exercise record (let it fail automatically if the userid doesn't exist)
+  // to create new document, we instantiate the model (ExerciseRecord)
+  let exerciseRecord = new ExerciseRecord({
+    userid,
+    description,
+    duration,
+    date,
+  });
+  
+  // then we can save the new instance of UserRecord to the users collection
+  const doc = await exerciseRecord.save();
+  console.log("output of save: ", doc);
+  const recordDate = new Date(doc.date);
+  const options = {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  };
+  const outputDate = `${recordDate.toLocaleDateString(
+    undefined,
+    options
+  )}`.replace(/,/g, "");
+  
+  const output = {
+    username: username,
+    description: doc.description,
+    duration: doc.duration,
+    date: outputDate,
+    _id: doc.userid,
+  };
+  
+  console.log(`output from post /api/users/${doc.userid}/exercises and username ${username}`);
+  res.json(output);
+});
