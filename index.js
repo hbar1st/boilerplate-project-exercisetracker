@@ -40,8 +40,14 @@ let UserRecord = mongoose.model("User", userSchema);
 // the Exercise model
 let ExerciseRecord = mongoose.model("Exercise", exerciseSchema);
 
-const listener = app.listen(process.env.PORT || 3000, () => {
-  console.log('Your app is listening on port ' + listener.address().port)
+const listener = app.listen(process.env.PORT || 3000, (error) => {
+  // This is important!
+  // Without this, any startup errors will silently fail
+  // instead of giving you a helpful error message.
+  if (error) {
+    throw error;
+  }
+  console.log("Your app is listening on port " + listener.address().port);
 })
 
 
@@ -68,11 +74,11 @@ app.route("/api/users").get(async (req, res) => {
 }).post(async (req, res) => {
   const username = req.body.username;
   const validUserRegex = /^[a-zA-Z0-9_]{5,}$/;
-
+  
   if (validUserRegex.test(username)) {
     console.log("it's valid, save it");
     //then after saving, get the result res.json: {"username":"pink","_id":"68af1302509d2d00133008f1"}
-
+    
     //step 1: figure out if the person already exists in the db
     let userid = await findOneByUsername(username);
     console.log(userid);
@@ -80,9 +86,9 @@ app.route("/api/users").get(async (req, res) => {
       console.log("this user exists");
     } else {
       console.log("this is a new user");
-      // when we want to create new document, we instantiate the model (URLRecord)
+      // to create new document, we instantiate the model (URLRecord)
       let userRecord = new UserRecord({ username });
-
+      
       // then we can save the new instance of UserRecord to the users collection
       const doc = await userRecord.save();
       console.log(doc);
@@ -93,3 +99,70 @@ app.route("/api/users").get(async (req, res) => {
     console.log(`username ${username} is invalid, ignore it`);
   }
 });
+
+// use route chaining to handle get and post
+app
+  .route("/api/users/:userid/exercises")
+  .get(async (req, res) => {
+    /*
+    const allExercises = await ExerciseRecord.find();
+    console.log(allExercises);
+    res.json(allExercises);
+    */
+  })
+  .post(async (req, res) => {
+    // get form data(description is required, duration is required, but date is not)
+    const userid = req.body[":_id"];
+
+    const usernameDoc = await UserRecord.findById(userid, {
+      username: 1,
+    });
+    const username = usernameDoc?.username;
+
+    if (usernameDoc) {
+      const description = req.body.description;
+      // duration is in minutes
+      const duration = req.body.duration;
+      const today = new Date();
+      // if date not given, then use today's date
+      let date = req.body.date;
+      if (date === "") {
+        console.log("try to make a new date");
+        date = `${today.getFullYear()}-${
+          today.getMonth() + 1
+        }-${today.getUTCDate()}`;
+      }
+
+      // create the exercise record (let it fail automatically if the userid doesn't exist)
+      // to create new document, we instantiate the model (ExerciseRecord)
+      let exerciseRecord = new ExerciseRecord({
+        userid,
+        description,
+        duration,
+        date,
+      });
+
+      // then we can save the new instance of UserRecord to the users collection
+      const doc = await exerciseRecord.save();
+      console.log("output of save: ", doc);
+      const recordDate = new Date(doc.date);
+      const options = {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      };
+      const outputDate = `${recordDate.toLocaleDateString(
+        undefined,
+        options
+      )}`.replace(/,/g, "");
+
+      res.json({
+        _id: doc.userid,
+        username: username,
+        date: outputDate,
+        duration: doc.duration,
+        description: doc.description,
+      });
+    }
+  });
