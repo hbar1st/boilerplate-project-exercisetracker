@@ -66,5 +66,5 @@ app.post("/api/users", async (req, res) => {
   }
   */
   
-  console.log(req.body.username);
+  console.log(req.body);
 });
