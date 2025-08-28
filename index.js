@@ -99,6 +99,20 @@ app.route("/api/users").get(async (req, res) => {
   }
 });
 
+function getFormattedDateString(dateStr) {
+  const recordDate = new Date(dateStr);
+  const options = {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  };
+  const outputDate = `${recordDate.toLocaleDateString(
+    undefined,
+    options
+  )}`.replace(/,/g, "");
+  return outputDate;
+}
 // use route chaining to handle get and post
 app.post("/api/users/:_id/exercises", async (req, res) => {
   // get form data(id & description & duration are required, but date is not)
@@ -138,17 +152,8 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
   // then we can save the new instance of UserRecord to the users collection
   const doc = await exerciseRecord.save();
   console.log("output of save: ", doc);
-  const recordDate = new Date(doc.date);
-  const options = {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  };
-  const outputDate = `${recordDate.toLocaleDateString(
-    undefined,
-    options
-  )}`.replace(/,/g, "");
+
+  const outputDate = getFormattedDateString(doc.date);
   
   const output = {
     username: username,
@@ -177,10 +182,24 @@ app.get("/api/users/:_id/logs", async (req, res) => {
   );
 
   const userRecord = await UserRecord.findById(userid)
-   .populate("loggedExercises").exec();
-  
-  console.log("found this record: ", userRecord)
-  //console.log("The user record loggedExercises: ", userRecord.loggedExercises);
+    .populate("loggedExercises")
+    .exec();
 
   // userRecord.loggedExercises can be null or an empty array
+
+  const outputExerciseArray = userRecord.loggedExercises.map((doc) => {
+    const outputDate = getFormattedDateString(doc.date);
+    return {
+      description: doc.description,
+      duration: doc.duration,
+      date: outputDate,
+    };
+  });
+
+  res.json({
+    _id: userRecord._id,
+    username: userRecord.username,
+    count: outputExerciseArray.length,
+    log: outputExerciseArray,
+  });
 });
