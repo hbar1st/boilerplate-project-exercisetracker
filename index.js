@@ -211,7 +211,6 @@ app.get("/api/users/:_id/logs", async (req, res) => {
                 options: { limit },
               }
         )
-        .limit(limit)
         .exec()
     : await UserRecord.findById(userid)
         .populate(
@@ -222,8 +221,7 @@ app.get("/api/users/:_id/logs", async (req, res) => {
                 //select: 'name email' // Include only 'name' and 'email' fields
               }
             : {
-                path: "loggedExercises",
-                options: { limit },
+                path: "loggedExercises"
               }
         )
         .exec();
