@@ -66,6 +66,9 @@ const findOneByUsername = async (username) => {
   }
 };
 
+/**
+ * 
+ */
 // use route chaining to handle get and post
 app.route("/api/users").get(async (req, res) => {
   const allUsers = await UserRecord.find();
@@ -113,6 +116,10 @@ function getFormattedDateString(dateStr) {
   )}`.replace(/,/g, "");
   return outputDate;
 }
+
+/**
+ * 
+ */
 // use route chaining to handle get and post
 app.post("/api/users/:_id/exercises", async (req, res) => {
   // get form data(id & description & duration are required, but date is not)
@@ -188,23 +195,38 @@ app.get("/api/users/:_id/logs", async (req, res) => {
   let { from, to, limit } = req.query;
   console.log("from: ", from);
   console.log("to:", to);
-  limit = limit ?? 1;
 
-  const userRecord = await UserRecord.findById(userid)
-    .populate(
-      from
-        ? {
-            path: "loggedExercises",
-            options: { limit },
-            match: { date: { $gte: new Date(from), $lte: new Date(to) } },
-            //select: 'name email' // Include only 'name' and 'email' fields
-          }
-        : {
-            path: "loggedExercises",
-            options: { limit },
-          }
-    )
-    .exec();
+
+  const userRecord = limit
+    ? await UserRecord.findById(userid)
+        .populate(
+          from
+            ? {
+                path: "loggedExercises",
+                match: { date: { $gte: new Date(from), $lte: new Date(to) } },
+                //select: 'name email' // Include only 'name' and 'email' fields
+              }
+            : {
+                path: "loggedExercises",
+                options: { limit },
+              }
+        )
+        .limit(limit)
+        .exec()
+    : await UserRecord.findById(userid)
+        .populate(
+          from
+            ? {
+                path: "loggedExercises",
+                match: { date: { $gte: new Date(from), $lte: new Date(to) } },
+                //select: 'name email' // Include only 'name' and 'email' fields
+              }
+            : {
+                path: "loggedExercises",
+                options: { limit },
+              }
+        )
+        .exec();
 
   // userRecord.loggedExercises can be null or an empty array
 
