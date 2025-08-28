@@ -186,22 +186,30 @@ app.get("/api/users/:_id/logs", async (req, res) => {
 
   // check other request query values
   let { from, to, limit } = req.query;
-  
+  console.log("from: ", from);
+  console.log("to:", to);
   limit = limit ?? 1;
 
   const userRecord = await UserRecord.findById(userid)
     .populate(
-      {
-        path: "loggedExercises", options: { limit },
-        match: { date:  },
-        //select: 'name email' // Include only 'name' and 'email' fields
-      })
+      from
+        ? {
+            path: "loggedExercises",
+            options: { limit },
+            match: { date: { $gte: new Date(from), $lte: new Date(to) } },
+            //select: 'name email' // Include only 'name' and 'email' fields
+          }
+        : {
+            path: "loggedExercises",
+            options: { limit },
+          }
+    )
     .exec();
 
   // userRecord.loggedExercises can be null or an empty array
 
   const outputExerciseArray = userRecord.loggedExercises.map((doc) => {
-    const outputDate = getFormattedDateString(doc.date);
+    //const outputDate = getFormattedDateString(doc.date);  //found a better way to get the proper format of the date
     return {
       description: doc.description,
       duration: doc.duration,
