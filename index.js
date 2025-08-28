@@ -101,7 +101,7 @@ app.route("/api/users").get(async (req, res) => {
 
 // use route chaining to handle get and post
 app.post("/api/users/:_id/exercises", async (req, res) => {
-  // get form data(description is required, duration is required, but date is not)
+  // get form data(id & description & duration are required, but date is not)
   const userid  = req.params["_id"];
   console.log("in the post /api/users/:_id/exercises and trying to find this user: ", req.params);
   const usernameDoc = await UserRecord.findById(userid, {
@@ -158,6 +158,29 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
     _id: doc.userid,
   };
   
+  const query = await UserRecord.updateOne(
+    { username },
+    { $push: { loggedExercises: { $each: [doc._id] } } }
+  );
+  console.log(query);
   console.log(`output from post /api/users/${doc.userid}/exercises and username ${username}`);
   res.json(output);
+});
+
+
+app.get("/api/users/:_id/logs", async (req, res) => {
+  const userid = req.params["_id"];
+
+  console.log(
+    "in the post /api/users/:_id/logs and trying to find this user: ",
+    req.params["_id"]
+  );
+
+  const userRecord = await UserRecord.findById(userid)
+   .populate("loggedExercises").exec();
+  
+  console.log("found this record: ", userRecord)
+  //console.log("The user record loggedExercises: ", userRecord.loggedExercises);
+
+  // userRecord.loggedExercises can be null or an empty array
 });
