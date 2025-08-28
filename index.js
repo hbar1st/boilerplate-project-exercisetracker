@@ -136,8 +136,8 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
   console.log("given date field value: ", req.body.date);
   if (date === "") {
     console.log("try to make a new date");
-    date = `${today.getFullYear()}-${today.getMonth() + 1
-      }-${today.getUTCDate()}`;
+    //date = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+    date = today.toDateString().slice(0, 17); //everything but the timestamp
   }
   
   // create the exercise record (let it fail automatically if the userid doesn't exist)
@@ -173,6 +173,9 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 });
 
 
+/**
+ * 
+ */
 app.get("/api/users/:_id/logs", async (req, res) => {
   const userid = req.params["_id"];
 
@@ -181,8 +184,18 @@ app.get("/api/users/:_id/logs", async (req, res) => {
     req.params["_id"]
   );
 
+  // check other request query values
+  let { from, to, limit } = req.query;
+  
+  limit = limit ?? 1;
+
   const userRecord = await UserRecord.findById(userid)
-    .populate("loggedExercises")
+    .populate(
+      {
+        path: "loggedExercises", options: { limit },
+        match: { date:  },
+        //select: 'name email' // Include only 'name' and 'email' fields
+      })
     .exec();
 
   // userRecord.loggedExercises can be null or an empty array
@@ -192,10 +205,13 @@ app.get("/api/users/:_id/logs", async (req, res) => {
     return {
       description: doc.description,
       duration: doc.duration,
-      date: outputDate,
+      date: new Date(doc.date).toDateString().slice(0,17),
     };
   });
 
+  console.log("outputExerciseArray: ", outputExerciseArray)
+//ideal output 
+// {"_id":"68afb70c509d2d001330092b","username":"pink","count":1,"log":[{"description":"a memory game","duration":30,"date":"Thu Aug 28 2025"}]}
   res.json({
     _id: userRecord._id,
     username: userRecord.username,
@@ -203,3 +219,4 @@ app.get("/api/users/:_id/logs", async (req, res) => {
     log: outputExerciseArray,
   });
 });
+
