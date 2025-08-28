@@ -141,7 +141,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
   // if date not given, then use today's date
   let date = req.body.date;
   console.log("given date field value: ", req.body.date);
-  if (date === "") {
+  if (!date || date === "") {
     console.log("try to make a new date");
     //date = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
     date = today.toDateString().slice(0, 17); //everything but the timestamp
@@ -175,7 +175,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
     { $push: { loggedExercises: { $each: [doc._id] } } }
   );
   console.log(query);
-  console.log(`output from post /api/users/${doc.userid}/exercises and username ${username}`);
+  console.log(`output from post /api/users/${doc.userid}/exercises and username ${username}: `, output);
   res.json(output);
 });
 
